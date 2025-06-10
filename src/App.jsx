@@ -22,19 +22,21 @@ function solve2Linear(a, b, c, p, q, r) {
 };
 function App() {
   const canvasRef = useRef(null);
+  const animationRef = useRef(null);
 
   const [l1, setl1] = useState(150);
   const [l2, setl2] = useState(150);
   const [g, setg] = useState(9.81);
   const [m1, setm1] = useState(100);
   const [m2, setm2] = useState(100);
-  const [a1, seta1] = useState(0);
-  const [a2, seta2] = useState(0);
-  const [a1dot, seta1dot] = useState(0);
-  const [a2dot, seta2dot] = useState(0);
+  const [a1, seta1] = useState(Math.PI / 4);
+  const [a2, seta2] = useState(Math.PI / 6);
+  const [a1dotm, seta1dotm] = useState(1);
+  const [a2dotm, seta2dotm] = useState(1);
+  const [isRunning, setIsRunning] = useState(true);
   const dt = 0.07;
 
-  const [pendulumState, setPendulumState] = useState([a1, a2, a1dot, a2dot]);
+  const [pendulumState, setPendulumState] = useState([a1, a2, 0, 0]);
 
   const pendulumDerivative = useCallback((t, state) => {
         let a1 = state[0];
@@ -56,7 +58,7 @@ function App() {
         const sol = solve2Linear(A, B, C, P, Q, R);
 
         return [a1dot, a2dot, sol[0], sol[1]];
-  }, [l1, l2, m1, m2, g]);
+  }, [l1, l2, m1, m2, g, pendulumState]);
 
   const drawPendulum = useCallback((ctx, angle1, angle2, pivotX, pivotY) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -104,79 +106,115 @@ function App() {
   }, [l1, l2]);
 
   useEffect(() => {
-    setPendulumState([a1, a2, a1dot, a2dot]);
-  }, [a1, a2, a1dot, a2dot]);
+    let a1dot = pendulumState[2], a2dot = pendulumState[3];
+    setPendulumState([a1, a2, a1dot * a1dotm, a2dot * a2dotm]);
+  }, [pendulumState, l1, l2, m1, m2, g]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 2 * (l1 + l2) + 20;
-    canvas.height = 2 * (l1 + l2) + 20;
+    canvas.width = 600;
+    canvas.height = 600;
 
     const pivotX = canvas.width / 2;
-    const pivotY = canvas.height / 2;
+    const pivotY = 200;
 
-    let animationFrameId;
+
+    let currentState = [...pendulumState];
 
     const animate = () => {
-        setPendulumState(prevState => rk4(pendulumDerivative, prevState, 0, dt));
-        drawPendulum(ctx, pendulumState[0], pendulumState[1], pivotX, pivotY);
-        animationFrameId = requestAnimationFrame(animate);
+        if (isRunning) {
+            currentState = rk4(pendulumDerivative, currentState, 0, dt);
+            setPendulumState([...currentState]);
+            seta1(currentState[0]);
+            seta2(currentState[1]);
+        }
+        drawPendulum(ctx, currentState[0], currentState[1], pivotX, pivotY);
+        animationRef.current = requestAnimationFrame(animate);
     };
+    
     animate();
 
     return () => {
-        cancelAnimationFrame(animationFrameId);
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+        }
     };
-  }, [pendulumState, pendulumDerivative, drawPendulum])
+  }, [pendulumDerivative, drawPendulum, isRunning]);
 
   return (
     <div>
       <h1 className='bg-amber-600 text-2xl text-center p-2'>Double Pendulum stimulation</h1>
       <div className='flex items-center justify-between gap-x-1 flex-wrap m-1.5'>
         <div>
-        <input type="range" min={100} max={300} value={l1} className='cursor-pointer' onChange={(e) => setl1(e.target.value)} />
+        <input type="range" min={100} max={300} value={l1} className='cursor-pointer' onChange={(e) => setl1(parseFloat(e.target.value))} />
         <label>l<sub>1</sub>: {l1}</label>
         </div>
         <div>
-        <input type="range" min={100} max={300} value={l2} className='cursor-pointer' onChange={(e) => setl2(e.target.value)} />
+        <input type="range" min={100} max={300} value={l2} className='cursor-pointer' onChange={(e) => setl2(parseFloat(e.target.value))} />
         <label>l<sub>2</sub>: {l2}</label>
         </div>
         <div>
-        <input type="range" min={100} max={300} value={m1} className='cursor-pointer' onChange={(e) => setm1(e.target.value)} />
+        <input type="range" min={100} max={300} value={m1} className='cursor-pointer' onChange={(e) => setm1(parseFloat(e.target.value))} />
         <label>m<sub>1</sub>: {m1}</label>
         </div>
         <div>
-        <input type="range" min={100} max={300} value={m2} className='cursor-pointer' onChange={(e) => setm2(e.target.value)} />
+        <input type="range" min={100} max={300} value={m2} className='cursor-pointer' onChange={(e) => setm2(parseFloat(e.target.value))} />
         <label>m<sub>2</sub>: {m2}</label>
         </div>
         <div>
-        <input type="range" min={5} max={20} step={0.2} value={g} className='cursor-pointer' onChange={(e) => setg(e.target.value)} />
+        <input type="range" min={5} max={20} step={0.2} value={g} className='cursor-pointer' onChange={(e) => setg(parseFloat(e.target.value))} />
         <label>g: {g}</label>
         </div>
       </div>
       <hr />
       <div className='flex items-center justify-between gap-x-1 flex-wrap m-1.5'>
         <div>
-        <input type="range" min={0} max={90} value={a1 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta1(parseFloat(e.target.value) * Math.PI / 180)} />
-        <label>θ<sub>1</sub>: {Math.round(a1 * 180 / Math.PI)}</label>
+        <input type="range" min={-90} max={90} value={a1 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta1(parseFloat(e.target.value) * Math.PI / 180)} />
+        <label>θ<sub>1</sub>: {Math.round(a1 * 180 / Math.PI) % 360} &deg;</label>
         </div>
         <div>
-        <input type="range" min={0} max={20} value={a1dot} className='cursor-pointer' onChange={(e) => seta1dot(e.target.value)} />
-        <label>ω<sub>1</sub>: {a1dot}</label>
+        <input type="range" min={-2} max={4} step={0.1} value={a1dotm} className='cursor-pointer' onChange={(e) => seta1dotm(parseFloat(e.target.value))} />
+        <label>ω<sub>1</sub>: {a1dotm}x</label>
         </div>
         <div>
-        <input type="range" min={0} max={90} value={a2 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta2(parseFloat(e.target.value) * Math.PI / 180)} />
-        <label>θ<sub>2</sub>: {Math.round(a2 * 180 / Math.PI)}</label>
+        <input type="range" min={-90} max={90} value={a2 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta2(parseFloat(e.target.value) * Math.PI / 180)} />
+        <label>θ<sub>2</sub>: {Math.round(a2 * 180 / Math.PI) % 360} &deg;</label>
         </div>
         <div>
-        <input type="range" min={0} max={20} value={a2dot} className='cursor-pointer' onChange={(e) => seta2dot(e.target.value)} />
-        <label>ω<sub>2</sub>: {a2dot}</label>
+        <input type="range" min={-2} max={4} step={0.1} value={a2dotm} className='cursor-pointer' onChange={(e) => seta2dotm(parseFloat(e.target.value))} />
+        <label>ω<sub>2</sub>: {a2dotm}x</label>
         </div>
       </div>
       <hr />
-      <canvas ref={canvasRef}></canvas>
+      <div className='flex justify-center'>
+      <button 
+          onClick={() => setIsRunning(!isRunning)}
+          className={`${isRunning ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'}
+             text-white font-bold py-2 px-4 mt-1 rounded cursor-pointer`}
+        >
+          {isRunning ? 'Pause' : 'Play'}
+      </button>
+      <button 
+          onClick={() => {
+            seta1(Math.PI / 4);
+            seta2(Math.PI / 6);
+            seta1dotm(1);
+            seta2dotm(1);
+            setIsRunning(false);
+          }}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-1 ml-1 rounded cursor-pointer"
+        >
+          Reset
+      </button>
+      </div>
+      <div className="flex justify-center mt-2">
+        <canvas 
+          ref={canvasRef}
+          className="border border-gray-300 rounded"
+        />
+      </div>
     </div>
   )
 }
