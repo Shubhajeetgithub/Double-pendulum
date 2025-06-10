@@ -172,7 +172,7 @@ function App() {
       <div className='flex items-center justify-between gap-x-1 flex-wrap m-1.5'>
         <div>
         <input type="range" min={-180} max={180} value={a1 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta1(parseFloat(e.target.value) * Math.PI / 180)} />
-        <label>θ<sub>1</sub>: {Math.round(a1 * 180 / Math.PI) % 360 > 180 ? Math.round(a1 * 180 / Math.PI) % 360 - 360: Math.round(a1 * 180 / Math.PI) % 360} &deg;</label>
+        <label>θ<sub>1</sub>: {((Math.round(a1 * 180 / Math.PI) + 180) % 360) - 180} &deg;</label>
         </div>
         <div>
         <input type="range" min={-2} max={4} step={0.1} value={a1dotm} className='cursor-pointer' onChange={(e) => seta1dotm(parseFloat(e.target.value))} />
@@ -180,7 +180,7 @@ function App() {
         </div>
         <div>
         <input type="range" min={-180} max={180} value={a2 * 180 / Math.PI} className='cursor-pointer' onChange={(e) => seta2(parseFloat(e.target.value) * Math.PI / 180)} />
-        <label>θ<sub>2</sub>: {Math.round(a2 * 180 / Math.PI) % 360 > 180 ? Math.round(a2 * 180 / Math.PI) % 360 - 360: Math.round(a2 * 180 / Math.PI) % 360} &deg;</label>
+        <label>θ<sub>2</sub>: {((Math.round(a2 * 180 / Math.PI) + 180) % 360) - 180} &deg;</label>
         </div>
         <div>
         <input type="range" min={-2} max={4} step={0.1} value={a2dotm} className='cursor-pointer' onChange={(e) => seta2dotm(parseFloat(e.target.value))} />
