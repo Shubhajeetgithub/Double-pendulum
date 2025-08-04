@@ -145,7 +145,7 @@ function App() {
 
   return (
     <div>
-      <h1 className='bg-amber-600 text-2xl text-center p-2'>Double Pendulum stimulation</h1>
+      <h1 className='bg-amber-600 text-2xl text-center p-2'>Double Pendulum simulation</h1>
       <div className='flex items-center justify-between gap-x-1 flex-wrap m-1.5'>
         <div>
         <input type="range" min={100} max={300} value={l1} className='cursor-pointer' onChange={(e) => setl1(parseFloat(e.target.value))} />
